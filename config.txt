@@ -1,0 +1,118 @@
+# ASE MOF MD CONFIG FILE
+
+# 1. SYSTEM
+
+system:
+  input_file: "str"     # structure file (.xyz, .traj, .vasp, .lammps)
+  format: "xyz"                  # optional, ASE can infer
+  pbc: true                      # periodic boundary conditions
+
+# 2. Force Field
+
+calculator:
+  name: "orb"
+  model: "pretrained.orb_v3_conservative_omol"
+
+  parameters:
+    device: "cuda"
+    dtype: "float32"
+    compile: false
+
+# 3. MD CONTROL
+
+md:
+  ensemble: "npt"                # nve | nvt | npt
+  method: "isotropic_mtk"        # depends on ensemble
+  total_steps: 15000             # number of MD steps
+  timestep_fs: 0.5               # timestep in femtoseconds
+
+# 4. THERMODYNAMIC STATE
+
+state:
+  temperature_K: 300.0           # required for NVT / NPT
+  pressure_bar: 1.01325          # required for NPT
+
+# 5. VELOCITY INITIALIZATION
+
+velocities:
+  initialize: true
+  method: "maxwell"              # maxwell | stationary | zero_rotation | phonon
+  zero_com: true                 # remove COM momentum
+  seed: 12345                    # RNG seed (null for random)
+
+# 6. THERMOSTAT (used for NVT / NPT)
+
+thermostat:
+  type: "nose_hoover_chain"      # langevin | nose_hoover_chain | bussi | andersen
+
+  nose_hoover_chain:
+    tdamp_fs: 100.0              # thermostat damping time
+    tchain: 3                    # number of thermostat variables
+    tloop: 1                     # thermostat sub-steps
+
+  langevin:
+    friction_per_fs: 0.01        # friction coefficient
+    fix_com: true
+
+  bussi:
+    taut_fs: 500.0               # temperature coupling time
+
+  andersen:
+    collision_probability: 0.002
+
+# 7. BAROSTAT (used only for NPT)
+
+barostat:
+  type: "mtk"                    # berendsen | mtk | langevin_baoab | melchionna
+  isotropic: true                # volume-only cell fluctuations
+
+  mtk:
+    pdamp_fs: 1000.0             # barostat damping time
+    pchain: 3                    # barostat chain length
+    ploop: 1                     # barostat sub-steps
+
+  berendsen:
+    taut_fs: 100.0
+    taup_fs: 1000.0
+    compressibility_per_bar: 4.57e-5
+
+  langevin_baoab:
+    T_tau_fs: null
+    P_tau_fs: null
+    P_mass: null
+    P_mass_factor: 1.0
+    hydrostatic: true
+    disable_cell_langevin: false
+
+  melchionna:
+    ttime_fs: null
+    pfactor: null
+    mask: null
+
+# 8. OUTPUT
+
+output:
+  workdir: "runs/du_300k_npt"
+  trajectory_file: "traj.traj"
+  log_file: "md.log"
+  final_structure: "final.xyz"
+
+  traj_interval: 50
+  log_interval: 50
+
+  append_trajectory: false
+  write_config_copy: true
+
+# 9. LOGGING OPTIONS
+
+logging:
+  header: true
+  stress: true
+  per_atom: false
+  mode: "a"
+
+# 10. SAFETY & DEBUG
+
+safety:
+  check_nan_energy: true
+  max_temperature_K: 5000
