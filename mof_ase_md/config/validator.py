@@ -19,6 +19,11 @@ def _require_str(cfg: dict, path: str) -> str:
         raise ConfigError(f"{path} must be a non-empty string")
     return val
 
+def _require_int(cfg: dict, path: str) -> int:
+    val = _require(cfg, path)
+    if not isinstance(val, int):
+        raise ConfigError(f"{path} must be an int")
+    return val
 
 def _require_bool(cfg: dict, path: str) -> bool:
     val = _require(cfg, path)
@@ -52,6 +57,13 @@ def validate_config(cfg: dict) -> dict:
     # system
     _require_str(cfg, "system.input_file")
     _require_bool(cfg, "system.pbc")
+
+    # system: charge & spin (required for ML force fields like ORB)
+    charge = _require_int(cfg, "system.charge")
+    spin = _require_int(cfg, "system.spin")
+
+    if spin <= 0:
+        raise ConfigError("system.spin must be an int > 0")
 
     # calculator (force field choice)
     _require_str(cfg, "calculator.name")
