@@ -4,8 +4,11 @@
 
 system:
   input_file: "zif4.data"     # structure file (.xyz, .traj, .vasp, .lammps)
-  format: "lammps-data"                  # https://ase-lib.org/ase/io/formatoptions.html
+  format: "lammps-data"          # https://ase-lib.org/ase/io/formatoptions.html
   pbc: true                      # periodic boundary conditions
+  charge: 0
+  spin: 1
+
 
 # 2. Force Field
 
@@ -26,9 +29,9 @@ calculator:
 md:
   ensemble: "npt"                # nve | nvt | npt
   method: "isotropic_mtk"        # depends on ensemble
-  total_steps: 15000             # number of MD steps
+  total_steps: 2             # number of MD steps
   timestep_fs: 0.5               # timestep in femtoseconds
-
+  
 # 4. THERMODYNAMIC STATE
 
 state:
@@ -41,7 +44,6 @@ velocities:
   initialize: true
   method: "maxwell"              # maxwell | stationary | zero_rotation | phonon
   zero_com: true                 # remove COM momentum
-  seed: 12345                    # RNG seed (null for random)
 
 # 6. THERMOSTAT (used for NVT / NPT)
 
@@ -95,15 +97,15 @@ barostat:
 # 8. OUTPUT
 
 output:
-  workdir: "runs/du_300k_npt"
+  workdir: "runs/zif_npt"
   trajectory_file: "traj.traj"
   log_file: "md.log"
   final_structure: "final.xyz"
 
-  traj_interval: 50
-  log_interval: 50
+  traj_interval: 1
+  log_interval: 1
 
-  append_trajectory: false
+  append_trajectory: true
   write_config_copy: true
 
 # 9. LOGGING OPTIONS
