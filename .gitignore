@@ -1,0 +1,29 @@
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ---- Virtual environments ----
+.env/
+.venv/
+env/
+venv/
+
+# ---- ASE / MD outputs ----
+runs/
+*.traj
+*.log
+*.xyz
+
+# ---- Config outputs ----
+config_used.yaml
+
+# ---- OS / editor junk ----
+.DS_Store
+Thumbs.db
+*ZoneIdentifier*
+
+# ---- Large data files ----
+*.data
+*.lammps

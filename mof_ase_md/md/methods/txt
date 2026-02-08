@@ -1,0 +1,57 @@
+python - << 'EOF'
+from pathlib import Path
+
+from mof_ase_md.config.loader import load_config
+from mof_ase_md.config.defaults import apply_defaults
+from mof_ase_md.config.validator import validate_config
+from mof_ase_md.system.atoms import load_atoms
+from mof_ase_md.calculator.orb import build_orb_calculator
+from mof_ase_md.md.velocities import initialize_velocities
+from mof_ase_md.md.dynamics import make_dynamics
+from mof_ase_md.md.outputs import attach_outputs
+
+methods = [
+    "langevin_baoab",
+    "melchionna",
+]
+
+base_cfg = load_config("config.txt")
+
+for method in methods:
+    print("\n==============================")
+    print("TESTING METHOD:", method)
+    print("==============================")
+
+    cfg = dict(base_cfg)
+    cfg["md"] = dict(base_cfg.get("md", {}))
+    cfg["md"]["ensemble"] = "npt"
+    cfg["md"]["method"] = method
+    cfg["md"]["total_steps"] = 2
+
+    cfg = apply_defaults(cfg)
+    cfg = validate_config(cfg)
+
+    # route output to a per-method folder
+    cfg["output"] = dict(cfg["output"])
+    cfg["output"]["workdir"] = f"runs/test_{method}"
+    cfg["output"]["traj_interval"] = 1
+    cfg["output"]["log_interval"] = 1
+
+    atoms = load_atoms(cfg)
+
+    calc = build_orb_calculator(cfg)
+    atoms.calc = calc
+
+    initialize_velocities(atoms, cfg)
+
+    dyn = make_dynamics(atoms, cfg)
+
+    attach_outputs(dyn, atoms, cfg)
+
+    dyn.run(2)
+
+    workdir = Path(cfg["output"]["workdir"])
+    print("DONE ✅", method)
+    print("Wrote:", workdir / cfg["output"]["trajectory_file"])
+    print("Wrote:", workdir / cfg["output"]["log_file"])
+EOF
