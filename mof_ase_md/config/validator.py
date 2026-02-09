@@ -1,4 +1,6 @@
 from __future__ import annotations
+from mof_ase_md.md.methods import get_method_info
+
 
 class ConfigError(ValueError):
     pass
@@ -62,6 +64,9 @@ def validate_config(cfg: dict) -> dict:
     charge = _require_int(cfg, "system.charge")
     spin = _require_int(cfg, "system.spin")
 
+    method = _require_str(cfg, "md.method").lower()
+    cfg["md"]["method"] = method
+
     if spin <= 0:
         raise ConfigError("system.spin must be an int > 0")
 
@@ -81,6 +86,16 @@ def validate_config(cfg: dict) -> dict:
     if ensemble not in ("nve", "nvt", "npt"):
         raise ConfigError("md.ensemble must be one of: nve, nvt, npt")
     cfg["md"]["ensemble"] = ensemble  # normalize
+
+    info = get_method_info(method)
+    required_ensemble = info["ensemble"]
+    
+    if ensemble != required_ensemble:
+        raise ConfigError(
+            f"md.ensemble='{ensemble}' does not match md.method='{method}' "
+            f"(method requires ensemble '{required_ensemble}')."
+        )
+
 
     total_steps = _require_int_gt(cfg, "md.total_steps", 0)
     timestep_fs = _require_num_gt(cfg, "md.timestep_fs", 0.0)
