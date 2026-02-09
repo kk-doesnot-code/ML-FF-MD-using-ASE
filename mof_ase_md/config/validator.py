@@ -87,7 +87,11 @@ def validate_config(cfg: dict) -> dict:
         raise ConfigError("md.ensemble must be one of: nve, nvt, npt")
     cfg["md"]["ensemble"] = ensemble  # normalize
 
-    info = get_method_info(method)
+    try:
+        info = get_method_info(method)
+    except Exception:
+        raise ConfigError(f"Unknown md.method: {method}")
+
     required_ensemble = info["ensemble"]
     
     if ensemble != required_ensemble:
@@ -95,7 +99,6 @@ def validate_config(cfg: dict) -> dict:
             f"md.ensemble='{ensemble}' does not match md.method='{method}' "
             f"(method requires ensemble '{required_ensemble}')."
         )
-
 
     total_steps = _require_int_gt(cfg, "md.total_steps", 0)
     timestep_fs = _require_num_gt(cfg, "md.timestep_fs", 0.0)
@@ -106,6 +109,66 @@ def validate_config(cfg: dict) -> dict:
 
     if ensemble == "npt":
         _require_num(cfg, "state.pressure_bar")
+    
+    if method == "velocity_verlet":
+        # NVE: no extra parameters beyond timestep.
+        pass
+
+    elif method == "langevin":
+        _require_num_gt(cfg, "thermostat.langevin.friction_per_fs", 0.0)
+
+    elif method == "nose_hoover_chain_nvt":
+        _require_num_gt(cfg, "thermostat.nose_hoover_chain.tdamp_fs", 0.0)
+        _require_int_gt(cfg, "thermostat.nose_hoover_chain.tchain", 0)
+        _require_int_gt(cfg, "thermostat.nose_hoover_chain.tloop", 0)
+
+    elif method == "bussi":
+        _require_num_gt(cfg, "thermostat.bussi.taut_fs", 0.0)
+
+    elif method == "andersen":
+        _require_num_gt(cfg, "thermostat.andersen.andersen_prob", 0.0)
+        if _require_num(cfg, "thermostat.andersen.andersen_prob") > 1.0:
+            raise ConfigError("thermostat.andersen.andersen_prob must be <= 1.0")
+
+    elif method == "nvt_berendsen":
+        _require_num_gt(cfg, "thermostat.berendsen.taut_fs", 0.0)
+
+    # -------- NPT methods --------
+    elif method == "npt_berendsen":
+        _require_num_gt(cfg, "barostat.berendsen.taup_fs", 0.0)
+        _require_num_gt(cfg, "barostat.berendsen.taut_fs", 0.0)  # <-- see note below
+        _require_num_gt(cfg, "barostat.berendsen.compressibility_per_bar", 0.0)
+
+    elif method in ("isotropic_mtk", "mtk"):
+        _require_num_gt(cfg, "thermostat.nose_hoover_chain.tdamp_fs", 0.0)
+        _require_int_gt(cfg, "thermostat.nose_hoover_chain.tchain", 0)
+        _require_int_gt(cfg, "thermostat.nose_hoover_chain.tloop", 0)
+
+        _require_num_gt(cfg, "barostat.mtk.pdamp_fs", 0.0)
+        _require_int_gt(cfg, "barostat.mtk.pchain", 0)
+        _require_int_gt(cfg, "barostat.mtk.ploop", 0)
+
+    elif method == "langevin_baoab":
+        # These are optional in ASE, but validate if user provides them.
+        # (If you later add defaults, switch to _require_num_gt)
+        if "barostat" in cfg and "baoab" in cfg["barostat"]:
+            baoab = cfg["barostat"]["baoab"]
+            if "T_tau_fs" in baoab:
+                _require_num_gt(cfg, "barostat.baoab.T_tau_fs", 0.0)
+            if "P_tau_fs" in baoab:
+                _require_num_gt(cfg, "barostat.baoab.P_tau_fs", 0.0)
+            if "P_mass_factor" in baoab:
+                _require_num_gt(cfg, "barostat.baoab.P_mass_factor", 0.0)
+
+    elif method == "melchionna":
+        # Optional knobs; validate if present
+        if "barostat" in cfg and "melchionna" in cfg["barostat"]:
+            mel = cfg["barostat"]["melchionna"]
+            if "ttime_fs" in mel:
+                _require_num_gt(cfg, "barostat.melchionna.ttime_fs", 0.0)
+            if "pfactor" in mel:
+                _require_num_gt(cfg, "barostat.melchionna.pfactor", 0.0)
+
 
     # output
     _require_str(cfg, "output.workdir")
