@@ -27,3 +27,5 @@ Thumbs.db
 # ---- Large data files ----
 *.data
 *.lammps
+
+*.Identifier
