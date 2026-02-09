@@ -63,6 +63,7 @@ thermostat:
     taut_fs: 500.0               # temperature coupling time
 
   andersen:
+    collision_probability: 0.002
     andersen_prob: 0.002
 
 # 7. BAROSTAT (used only for NPT)
