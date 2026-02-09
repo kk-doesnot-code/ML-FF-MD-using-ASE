@@ -22,7 +22,7 @@ config_used.yaml
 # ---- OS / editor junk ----
 .DS_Store
 Thumbs.db
-*ZoneIdentifier*
+*Zone.Identifier*
 
 # ---- Large data files ----
 *.data
